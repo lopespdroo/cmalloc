@@ -19,6 +19,10 @@ The first implementation on the malloc we are building behaves just like a linea
 
 It fails because it doesn't gives us a way to reallocate the memory, and does not pick the best location for the memory to be allocated, it just goes blind and wastes a lot of memory.
 
+## Adding address information to our memory allocator
+
+As mentioned before, part of the fail of the dummy allocator is because it allocates the memory, returns to the past adress and terminates. To implement the concepts of malloc, free and realloc, we need to keep the information of where every allocated begins and ends, and follow in a linked-list-style to help us to know if we need to allocate more memory at the end or not.
+
 ## Notes
 
 How can we know if the break is placed inside the page boundaries?
