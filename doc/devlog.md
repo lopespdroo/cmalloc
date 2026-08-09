@@ -19,9 +19,49 @@ The first implementation on the malloc we are building behaves just like a linea
 
 It fails because it doesn't gives us a way to reallocate the memory, and does not pick the best location for the memory to be allocated, it just goes blind and wastes a lot of memory.
 
+We start the dummy allocator discovering where the top of the heap is with:
+```c
+p = sbrk(0)
+```
+
+And then, after that, we call the function to increment to the size we passed; if it fails, we return `NULL`.
+
 ## Adding address information to our memory allocator
 
-As mentioned before, part of the fail of the dummy allocator is because it allocates the memory, returns to the past adress and terminates. To implement the concepts of malloc, free and realloc, we need to keep the information of where every allocated begins and ends, and follow in a linked-list-style to help us to know if we need to allocate more memory at the end or not.
+As mentioned before, part of the fail of the dummy allocator is because it allocates the memory, returns to the past adress and terminates. To implement the concepts of malloc, free and realloc, we need to keep the information of where every allocated memory begins and ends, and follow in a linked-list-style to help us to know if we need to allocate more memory at the end or not.
+
+To follow this structure in a linked-list way, we need to adress one of the topics we adressed earlier: "`malloc` should be tractable". To jump between the memory page, while tracking where we should go, we need to know the adress of each allocatec memory, the places where it is free and the size of it; to do all that we meta-datas!
+
+The example given in the article perfect illustrates how we should conceptualize meta-data, but here's a brief summary: the meta-data is stored in the memory block together with the user-data, and its purpose is only to give us information of where we should go, the size of where we currently are and where is the freed memory.
+
+### Linked lists in C and typedef's
+
+To implement this structure where a point a points to point b, we indeed need to use the linked list as our data structure to hold up the user-data and the meta-data. There's few types of linked lists, but the one we'll implement is the singly linked list, where it will end with the last node pointing no `NULL`.
+
+Example:
+```
++---------+-----+       +---------+-----+
+|meta-data|value| ----> |meta-data|value| ----> NULL
++---------+-----+       +---------+-----+
+```
+As every linked list, our node will contain the data, the pointer to the next node and an integer to tell us if the chunk we are seeing it is free or not.
+
+To help us we also make use of typedef. In The C Programming Language we have:
+> C provides a facily called `typedef` for creating new data type names.[...] It must be emphasized that a `typedef` declaration does not create a new type in any sense; it merely adds a new name for some existing type. [...] variables declared this way have exactly the same properties whose declaration are spelled explicitly. In effect `typedef` is like `#define`, except that since it is interpreted by the compiler, it can cope with textual substitutions that are beyond the capabilties of the preprocessor.
+
+But if we stop to notice, the declaration of `typedef` in the article shows us that inside the struct of containing the nodes, we reference the node itself. So, why do we need that and why does it need to be declared with a pointer?
+
+The answer to this question is embedded with memory concepts itself. If we declared our struct like
+```c
+struct block_size {
+    size_t size;
+    block_size;
+    int free;
+}
+```
+the compiler would throw us a warning saying that the declaration does not declare nothing. And this happens because the declaration of the struct ends in the `}`, and when we create an instance of its own structure inside of it, the compiler does not know how much memory it needs to allocate to create the struct. We solve this by implementing a pointer to the struct, forcing the compiler to work with the size of the pointer, that is known in compile-time.
+
+Doing so will correctly reference the own struct inside of it, making the nodes point to each other with no problems. If you are questioning how does the struct allocates memory without a memory allocator, the articles explains this very well.
 
 ## Notes
 
