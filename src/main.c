@@ -2,12 +2,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-void *malloc(size_t size) {
-    void *p;
+typedef struct block_size* t_block;
 
-    p = sbrk(0);
+struct block_size {
+    size_t size;
+    t_block next;
+    int free;
+};
 
-    if (sbrk(size) == (void*)-1) {
-        return NULL;
-    }
-}
