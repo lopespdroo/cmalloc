@@ -63,6 +63,31 @@ the compiler would throw us a warning saying that the declaration does not decla
 
 Doing so will correctly reference the own struct inside of it, making the nodes point to each other with no problems. If you are questioning how does the struct allocates memory without a memory allocator, the articles explains this very well.
 
+## The First Fit algorithm
+
+Right away I got a little confused with the while loop stated in the article, inside the `find_block` function. It reads:
+```c
+t_block find_block(t_block* last, size_t size) {
+    t_block b = base;
+
+    while(b && !(b->free && b->size >= size)) {
+        *last = b;
+        b = b->next;
+    }
+
+    return (b);
+}
+```
+We can simply read the instruction as: while it still has blocks and the current block is not big enough nor it's free, keep searching. The function searchs for a block that fits our size and available needs.
+
+To satisfy the very possible scenario of the chunk not fitting our needs, and we need to extend the heap, we'll adress that with the `extend_heap` function. To explain in simple words: all it does is:
+* It receives two arguments: the last block of the current chunk and the size of it;
+* It creates a new block;
+* We start the extension of the heap by adressing where we currently are in the chunk (`sbrk(0)`);
+* It tries to increment the heap by `BLOCK_SIZE` (32 bits) + the size of the last block;
+* It updates the size and pointer to the next block of the current block;
+* It updates the pointer of the last seen block to the current one and marks it as free.
+
 ## Notes
 
 How can we know if the break is placed inside the page boundaries?
