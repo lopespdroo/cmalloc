@@ -23,3 +23,22 @@ t_block find_block(t_block* last, size_t size) {
     return (b);
 }
 
+#define BLOCK_SIZE sizeof(struct block_size)
+
+t_block extend_heap(t_block last, size_t s) {
+    t_block b;
+    b = sbrk(0);
+
+    if (sbrk(BLOCK_SIZE + s) == (void*)-1)
+        return NULL;
+    
+    b->size = s;
+    b->next = NULL;
+
+    if (last)
+        last->next = b;
+    b->free = 0;
+
+    return b;
+}
+
