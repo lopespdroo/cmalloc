@@ -10,6 +10,7 @@ struct block_size {
     size_t size;
     t_block next;
     int free;
+    char data[1];
 };
 
 t_block find_block(t_block* last, size_t size) {
@@ -23,7 +24,7 @@ t_block find_block(t_block* last, size_t size) {
     return (b);
 }
 
-#define BLOCK_SIZE sizeof(struct block_size)
+#define BLOCK_SIZE 12;
 
 t_block extend_heap(t_block last, size_t s) {
     t_block b;
@@ -37,8 +38,19 @@ t_block extend_heap(t_block last, size_t s) {
 
     if (last)
         last->next = b;
+
     b->free = 0;
 
     return b;
+}
+
+void split_block(t_block b, size_t s) {
+    t_block new;
+    new       = b->data + s;
+    new->size = b->size - s - BLOCK_SIZE;
+    new->next = b->next;
+    new->free = 1;
+    b->size = s;
+    b->next = new;
 }
 
