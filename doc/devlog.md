@@ -1,6 +1,6 @@
 # cmalloc
 
-The porpurse of this project is to understand the underlying concepts of a memory allocator and how one works under the hood. I'm writing this devlog to articulate what I'll learn by doing this project. The project will follow the article from Marwan Burelle, titled A Malloc Tutorial. My goal here is to learn this key concepts to apply them in the future in other projects, and also learn memory concepts like freeing, reallocating, anm allocating.
+The porpurse of this project is to understand the underlying concepts of a memory allocator and how one works under the hood. I'm writing this devlog to articulate what I'll learn by doing this project. The project will follow the article from Marwan Burelle, titled A Malloc Tutorial. My goal here is to learn these key concepts to apply them in the future in other projects, and also learn memory concepts like freeing, reallocating, and allocating.
 
 Here I have the definition of malloc and free in the words of Dennis Ritchie, author of The C Programming Language:
 > Calls to `malloc` and `free` may occur in any order; malloc call upon the operating system to obtain more memory as necessary. [..] Rather than allocating from a compiled-in fixed-sized array, malloc will request space from the memory as needed. Since other activities in the program may also request space without calling this allocator, the space that `malloc` manages may not be contiguous. Thus its free storage is kept as a list of free blocks. Each block contains a size, a pointer to the next block, and the space itself. The blocks are kept in order of increasing storage adress, and the last block (highest address) points to the first.
@@ -9,7 +9,7 @@ Following the Burelle tutorial we can also estabilish some other key concepts:
 * `malloc` should be tractable; `malloc` must terminate as soon as possible.
 * The pointer returned by `malloc` points to an space where it can read or write without concerns.
 
-In the article, Burelle explains we will use two main functions to do the memory allocation for us: `brk()` and `sbrk()`; where `brk()` will be responsible for setting the adress where the pointer should go in the memory heap, and `sbrk()` will allocate ou free (if the value is negative).
+In the article, Burelle explains we will use two main functions to do the memory allocation for us: `brk()` and `sbrk()`; where `brk()` will be responsible for setting the adress where the pointer should go in the memory heap, and `sbrk()` will allocate or free (if the value is negative).
 
 On the 2.3 section, Unmapped Region and No Man's Land, Burelle tells us about the limits of the allocation. What caught my attention was him saying that we don't really have a way to know where the next boundary of the page (or block) is, thus forcing us to go blindly. 
 
@@ -30,13 +30,13 @@ And then, after that, we call the function to increment to the size we passed; i
 
 As mentioned before, part of the fail of the dummy allocator is because it allocates the memory, returns to the past adress and terminates. To implement the concepts of malloc, free and realloc, we need to keep the information of where every allocated memory begins and ends, and follow in a linked-list-style to help us to know if we need to allocate more memory at the end or not.
 
-To follow this structure in a linked-list way, we need to adress one of the topics we adressed earlier: "`malloc` should be tractable". To jump between the memory page, while tracking where we should go, we need to know the adress of each allocatec memory, the places where it is free and the size of it; to do all that we meta-datas!
+To follow this structure in a linked-list way, we need to adress one of the topics we adressed earlier: "`malloc` should be tractable". To jump between the memory page, while tracking where we should go, we need to know the adress of each allocatec memory, the places where it is free and the size of it; to do all that we'll use meta-datas!
 
-The example given in the article perfect illustrates how we should conceptualize meta-data, but here's a brief summary: the meta-data is stored in the memory block together with the user-data, and its purpose is only to give us information of where we should go, the size of where we currently are and where is the freed memory.
+The example given in the article perfect illustrates how we should conceptualize meta-data, but here's a brief summary: the meta-data is stored in the memory block together with the user-data, and its purpose is only to give us information of where we should go, the size of the block where we currently are and where is the freed memory.
 
 ### Linked lists in C and typedef's
 
-To implement this structure where a point a points to point b, we indeed need to use the linked list as our data structure to hold up the user-data and the meta-data. There's few types of linked lists, but the one we'll implement is the singly linked list, where it will end with the last node pointing no `NULL`.
+To implement this structure where a point `a` points to point `b`, we indeed need to use the linked list as our data structure to hold up the user-data and the meta-data. There's few types of linked lists, but the one we'll implement is the singly linked list, where it will end with the last node pointing no `NULL`.
 
 Example:
 ```
