@@ -88,6 +88,16 @@ To satisfy the very possible scenario of the chunk not fitting our needs, and we
 * It updates the size and pointer to the next block of the current block;
 * It updates the pointer of the last seen block to the current one and marks it as free.
 
+## The implementation of calloc, malloc, realloc and free
+
+To first implement these functions we need to explain what actually is being implemented.
+
+### What is the difference between calloc and malloc?
+
+These two concepts are very easy to understand. While in `malloc` we only allocate memory to the requested size, without initializing with any vvalue (garbage values), in `calloc` we simply allocate memory with an array with zero stored within it.
+
+One another cool thing I've noticed in the code is the way the author declared the `s4` and `i` variables: using `size_t` instead of any other type (`unsigned int`, `int`, `unsigned long long`). It is done this way because `size_t` automatically aligns with the computer architecture of the user, matching the machine's native pointer and memory size.
+
 ## Notes
 
 How can we know if the break is placed inside the page boundaries?
