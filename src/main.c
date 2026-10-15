@@ -3,9 +3,11 @@
 #include <unistd.h>
 
 #define align4() ((((x)-1)>>2)<<2)+4
+#define BLOCK_SIZE 12;
+
+void *base = NULL;
 
 typedef struct block_size* t_block;
-
 struct block_size {
     size_t size;
     t_block next;
@@ -54,3 +56,48 @@ void split_block(t_block b, size_t s) {
     b->next = new;
 }
 
+void* malloc(size_t t) {
+    t_block b, last;
+    size_t s;
+    s = align4(size);
+
+    if (base) {
+        last =  base;
+        b = find_block(&last, s);
+
+        if (b) {
+            if ((b->size -s) >= (BLOCK_SIZE + 4)) {
+                split_block(b, s);
+            }
+
+            b->free = 0;
+        } else {
+            b = extend_heap(NULL, s);
+            if (!b)
+                return NULL;
+        }
+    } else { 
+        b = extend_heap(NULL, s);
+        
+        if (!b)
+            return NULL;
+        
+        base = b;
+    }
+
+    return(b->data);
+}
+
+void* calloc(size_t number, size_t size) {
+    size_t* new;
+    size_t s4, i;
+    new = malloc(number * size);
+
+    if (new) {
+        s4 = align4(number * size) << 2;
+        for (i = 0; i < s4; i++)
+            new[i] = 0;
+    }
+
+    return (new);
+}
