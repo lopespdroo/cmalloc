@@ -10,8 +10,10 @@ void *base = NULL;
 typedef struct block_size* t_block;
 struct block_size {
     size_t size;
-    t_block next;
+    t_block* next;
+    t_block* prev;
     int free;
+    void* ptr;
     char data[1];
 };
 
@@ -100,4 +102,17 @@ void* calloc(size_t number, size_t size) {
     }
 
     return (new);
+}
+
+t_block fusion(t_block b) {
+    if (b->next && b->next->free) {
+        b->size += BLOCK_SIZE + b->next->size;
+        b->next = b->next->next;
+
+        if (b->next) {
+            b->next->prev = b;
+        }
+    }
+
+    return (b);
 }
