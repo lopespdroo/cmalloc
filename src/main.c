@@ -116,3 +116,44 @@ t_block fusion(t_block b) {
 
     return (b);
 }
+
+t_block get_block(void* p) {
+    char* tmp;
+    tmp = p;
+    tmp -= BLOCK_SIZE;
+
+    return (p = tmp);
+}
+
+int validate_adress(void* p) {
+    if (base) {
+        if (p > base && p < sbrk(0)) {
+            return (p == (get_block(p))-->ptr);
+        }
+    }
+
+    return (0);
+}
+
+void free(void *p) {
+    t_block b;
+    
+    if (validate_adress(p)) {
+        b = get_block(p);
+        b-> free = 1;
+
+        if (b->prev && b->prev->free) {
+            b = fusion(b->prev);
+        } 
+
+        if (b->next)
+            fusion(b);
+        else {
+            if (b->prev)
+                b->prev->next = NULL;
+            else
+                base = NULL;
+            brk(b);
+        }
+    }
+}
