@@ -98,6 +98,45 @@ These two concepts are very easy to understand. While in `malloc` we only alloca
 
 One another cool thing I've noticed in the code is the way the author declared the `s4` and `i` variables: using `size_t` instead of any other type (`unsigned int`, `int`, `unsigned long long`). It is done this way because `size_t` automatically aligns with the computer architecture of the user, matching the machine's native pointer and memory size.
 
+### The free() function
+
+We can understand `free()` as a function that takes the pointer returned by `malloc()` and de-allocates memory. It doesn't and it shouldn't return nothing else.
+
+But we need to be cautios with memory fragmentation. But what exactly is memory fragmentation?
+
+Well, let's assume that we have a limited-size heap with size of 24 units. Then, at that heap we request 12 units of the heap.
+```
+int *p1;
+p1 = malloc(12 * sizeof(int));
+```
+Now the size of our heap is 12. And later, we need to request more 6 units. Reducing the size of our heap to 6 units.
+```
+int* p2;
+p2 = malloc(6 * sizeof(int));
+```
+Eventually, our `p1` point is freed, de-allocating 12 units of memory of this same heap.
+```
+free(p1);
+p1 = NULL;
+```
+This leaves us with 18 units free in total (12 units recently freed + 6 units never used). But, eventually, we need to request 18 units of memory.
+```
+int *p1;
+p = malloc(18 * sizeof(int));
+```
+This will not go well as our heap is now fragmentated and we only have 18 units if we count them separated, when we actually have this:
+```
++---------------+------------------+---------------+
+|12units (free) | 6units (ocupied) | 6units (free) |
++---------------+------------------+---------------+
+```
+This pictures memory fragmentation in a nutshell. The solution to this problem will is not easy, though we can't easily merge the separated blocks without moving the contents of the currently utilized block. This operation would cost us a lot of time and would be very likely to end up in a error, since it's not memory safe.
+
+In our case we'll built a function that it will look to its neighbours to see if they are free or not, and if they are, we'll merge them into one big free chunk, tackling this problem.
+
+
+
+
 ## Notes
 
 How can we know if the break is placed inside the page boundaries?
