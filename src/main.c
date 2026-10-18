@@ -157,3 +157,56 @@ void free(void *p) {
         }
     }
 }
+
+void copy_block(t_block src, t_block dest) {
+    int* src_data, *dest_data;
+    size_t i;
+    src_data = src->ptr;
+    dest_data = dest->ptr;
+
+
+    for (i = 0; i * 4 < src->size && i * 4 < dest->size; i++) {
+        dest_data[i] = src_data[i];
+    }
+}
+
+void* realloc(void* pointer, size_t size) {
+    size_t s;
+    t_block block, new;
+    void* new_pointer;
+
+    if (!pointer)
+        return (malloc(size));
+
+    if (validate_adress(pointer)) {
+        size = align4(size);
+        b = get_block(pointer);
+
+        if (b->size >= s) {
+            if (b->size - s >= (BLOCK_SIZE + 4)) 
+                split_block(block, s);
+        } else {
+            if (block->next && block->next->free
+                && (block->size + BLOCK_SIZE +
+                block->next->size) >= s) {
+
+                fusion(block);
+
+                if (block->size - s >= (BLOCK_SIZE + 4))
+                    split_block(block, s);
+            } else {
+                new_pointer = malloc(s);
+
+                if (!new_pointer) { return NULL; }
+
+                new = get_block(new_pointer);
+                copy_block(block, new);
+                free(pointer);
+
+                return new_pointer;
+            }
+        }
+        return p;
+    }
+    return NULL;
+}
