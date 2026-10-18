@@ -134,6 +134,13 @@ This pictures memory fragmentation in a nutshell. The solution to this problem w
 
 In our case we'll built a function that it will look to its neighbours to see if they are free or not, and if they are, we'll merge them into one big free chunk, tackling this problem.
 
+To put this in practice we need to turn our singly linked-list in a doble linked-list, making it keep track of the next block and the previous block, so our operation of merging can be executed safely and fast.
+
+### Resizing memory
+
+Last but not least we need to create a function to reallocate our memory and resize our memory blocks. I've found the code of this section quite confusing to make sense of it, and thus decided to rename some variables to fit my criteria.
+
+
 
 
 
