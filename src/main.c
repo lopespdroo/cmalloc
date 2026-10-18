@@ -7,17 +7,17 @@
 
 void *base = NULL;
 
-typedef struct block_size* t_block;
+typedef struct block_size *t_block;
 struct block_size {
     size_t size;
-    t_block* next;
-    t_block* prev;
+    t_block *next;
+    t_block *prev;
     int free;
-    void* ptr;
+    void *ptr;
     char data[1];
 };
 
-t_block find_block(t_block* last, size_t size) {
+t_block find_block(t_block *last, size_t size) {
     t_block b = base;
 
     while(b && !(b->free && b->size >= size)) {
@@ -25,7 +25,7 @@ t_block find_block(t_block* last, size_t size) {
         b = b->next;
     }
 
-    return (b);
+    return b;
 }
 
 #define BLOCK_SIZE 12;
@@ -34,14 +34,12 @@ t_block extend_heap(t_block last, size_t s) {
     t_block b;
     b = sbrk(0);
 
-    if (sbrk(BLOCK_SIZE + s) == (void*)-1)
-        return NULL;
+    if (sbrk(BLOCK_SIZE + s) == (void*)-1) { return NULL; }
     
     b->size = s;
     b->next = NULL;
 
-    if (last)
-        last->next = b;
+    if (last) { last->next = b; }
 
     b->free = 0;
 
@@ -58,31 +56,30 @@ void split_block(t_block b, size_t s) {
     b->next = new;
 }
 
-void* malloc(size_t t) {
+void *malloc(size_t size) {
     t_block b, last;
     size_t s;
     s = align4(size);
 
     if (base) {
-        last =  base;
+        last = base;
         b = find_block(&last, s);
 
         if (b) {
-            if ((b->size -s) >= (BLOCK_SIZE + 4)) {
-                split_block(b, s);
-            }
+            if ((b->size -s) >= 
+                (BLOCK_SIZE + 4)) { split_block(b, s); }
 
             b->free = 0;
+
         } else {
             b = extend_heap(NULL, s);
-            if (!b)
-                return NULL;
+
+            if (!b) { return NULL; }
         }
     } else { 
         b = extend_heap(NULL, s);
         
-        if (!b)
-            return NULL;
+        if (!b) { return NULL; }
         
         base = b;
     }
@@ -90,18 +87,17 @@ void* malloc(size_t t) {
     return(b->data);
 }
 
-void* calloc(size_t number, size_t size) {
-    size_t* new;
+void *calloc(size_t number, size_t size) {
+    size_t *new;
     size_t s4, i;
     new = malloc(number * size);
 
     if (new) {
         s4 = align4(number * size) << 2;
-        for (i = 0; i < s4; i++)
-            new[i] = 0;
+        for (i = 0; i < s4; i++) { new[i] = 0; }
     }
 
-    return (new);
+    return new;
 }
 
 t_block fusion(t_block b) {
@@ -109,45 +105,38 @@ t_block fusion(t_block b) {
         b->size += BLOCK_SIZE + b->next->size;
         b->next = b->next->next;
 
-        if (b->next) {
-            b->next->prev = b;
-        }
+        if (b->next) { b->next->prev = b; }
     }
 
-    return (b);
+    return b;
 }
 
-t_block get_block(void* p) {
-    char* tmp;
+t_block get_block(void *p) {
+    char *tmp;
     tmp = p;
     tmp -= BLOCK_SIZE;
 
     return (p = tmp);
 }
 
-int validate_adress(void* p) {
+int validate_adress(void *p) {
     if (base) {
-        if (p > base && p < sbrk(0)) {
-            return (p == (get_block(p))-->ptr);
-        }
+        if (p > base && p < sbrk(0)) { return (p == (get_block(p))-->ptr); }
     }
 
-    return (0);
+    return 0;
 }
 
-void free(void *p) {
+void free(void *pointer) {
     t_block b;
     
-    if (validate_adress(p)) {
-        b = get_block(p);
+    if (validate_adress(pointer)) {
+        b = get_block(pointer);
         b-> free = 1;
 
-        if (b->prev && b->prev->free) {
-            b = fusion(b->prev);
-        } 
+        if (b->prev && b->prev->free) { b = fusion(b->prev); } 
 
-        if (b->next)
-            fusion(b);
+        if (b->next) { fusion(b); }
         else {
             if (b->prev)
                 b->prev->next = NULL;
