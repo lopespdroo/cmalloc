@@ -1,21 +1,23 @@
 #include <stdio.h>
+#include <stddef.h>
 #include <sys/types.h>
 #include <unistd.h>
 
-#define align4() ((((x)-1)>>2)<<2)+4
-#define BLOCK_SIZE 12;
+#define align8(x) (((((x)-1)>>3)<<3)+8)
 
 void *base = NULL;
 
-typedef struct block_size *t_block;
-struct block_size {
+typedef struct block *t_block;
+struct block {
     size_t size;
-    t_block *next;
-    t_block *prev;
+    t_block next;
+    t_block prev;
     int free;
     void *ptr;
     char data[1];
 };
+
+#define BLOCK_SIZE offsetof(struct block, data)
 
 t_block find_block(t_block *last, size_t size) {
     t_block b = base;
@@ -28,8 +30,6 @@ t_block find_block(t_block *last, size_t size) {
     return b;
 }
 
-#define BLOCK_SIZE 12;
-
 t_block extend_heap(t_block last, size_t s) {
     t_block b;
     b = sbrk(0);
@@ -38,6 +38,8 @@ t_block extend_heap(t_block last, size_t s) {
     
     b->size = s;
     b->next = NULL;
+    b->prev = last;
+    b->ptr = b->data;
 
     if (last) { last->next = b; }
 
@@ -48,18 +50,22 @@ t_block extend_heap(t_block last, size_t s) {
 
 void split_block(t_block b, size_t s) {
     t_block new;
-    new       = b->data + s;
+    new       = (t_block)(b->data + s);
     new->size = b->size - s - BLOCK_SIZE;
     new->next = b->next;
+    new->prev = b;
     new->free = 1;
+    new->ptr = new->data;
     b->size = s;
     b->next = new;
+
+    if (new->next) { new->next->prev = new; }
 }
 
 void *malloc(size_t size) {
     t_block b, last;
     size_t s;
-    s = align4(size);
+    s = align8(size);
 
     if (base) {
         last = base;
@@ -67,12 +73,12 @@ void *malloc(size_t size) {
 
         if (b) {
             if ((b->size -s) >= 
-                (BLOCK_SIZE + 4)) { split_block(b, s); }
+                (BLOCK_SIZE + 8)) { split_block(b, s); }
 
             b->free = 0;
 
         } else {
-            b = extend_heap(NULL, s);
+            b = extend_heap(last, s);
 
             if (!b) { return NULL; }
         }
@@ -88,16 +94,19 @@ void *malloc(size_t size) {
 }
 
 void *calloc(size_t number, size_t size) {
-    size_t *new;
-    size_t s4, i;
-    new = malloc(number * size);
+    char *p;
+    size_t total, i;
 
-    if (new) {
-        s4 = align4(number * size) << 2;
-        for (i = 0; i < s4; i++) { new[i] = 0; }
+    if (size != 0 && number > (size_t)-1 / size) { return NULL; }
+
+    total = number * size;
+    p = malloc(total);
+
+    if (p) {
+        for (i = 0; i < total; i++) { p[i] = 0; }
     }
 
-    return new;
+    return p;
 }
 
 t_block fusion(t_block b) {
@@ -116,12 +125,12 @@ t_block get_block(void *p) {
     tmp = p;
     tmp -= BLOCK_SIZE;
 
-    return (p = tmp);
+    return (t_block)tmp;
 }
 
 int validate_adress(void *p) {
     if (base) {
-        if (p > base && p < sbrk(0)) { return (p == (get_block(p))-->ptr); }
+        if (p > base && p < sbrk(0)) { return (p == (get_block(p))->ptr); }
     }
 
     return 0;
@@ -159,20 +168,19 @@ void copy_block(t_block src, t_block dest) {
     }
 }
 
-void* realloc(void* pointer, size_t size) {
+void* realloc(void *pointer, size_t size) {
     size_t s;
     t_block block, new;
-    void* new_pointer;
+    void *new_pointer;
 
-    if (!pointer)
-        return (malloc(size));
+    if (!pointer) { return (malloc(size)); }
 
     if (validate_adress(pointer)) {
-        size = align4(size);
-        b = get_block(pointer);
+        s = align8(size);
+        block = get_block(pointer);
 
-        if (b->size >= s) {
-            if (b->size - s >= (BLOCK_SIZE + 4)) 
+        if (block->size >= s) {
+            if (block->size - s >= (BLOCK_SIZE + 8)) 
                 split_block(block, s);
         } else {
             if (block->next && block->next->free
@@ -181,7 +189,7 @@ void* realloc(void* pointer, size_t size) {
 
                 fusion(block);
 
-                if (block->size - s >= (BLOCK_SIZE + 4))
+                if (block->size - s >= (BLOCK_SIZE + 8))
                     split_block(block, s);
             } else {
                 new_pointer = malloc(s);
@@ -195,7 +203,7 @@ void* realloc(void* pointer, size_t size) {
                 return new_pointer;
             }
         }
-        return p;
+        return pointer;
     }
     return NULL;
 }
