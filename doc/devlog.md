@@ -140,10 +140,59 @@ To put this in practice we need to turn our singly linked-list in a doble linked
 
 Last but not least we need to create a function to reallocate our memory and resize our memory blocks. I've found the code of this section quite confusing to make sense of it, and thus decided to rename some variables to fit my criteria.
 
+# Making the code actually work
+
+So, after learning a lot with this paper, now it's time to actually make the the code work. As I previously knew, this paper is very outdated, but I decided to went through it all to learn new things and get the whole understanding without using any online help, as a chatbot. I did some changes here and there, as written in here, but overall the code is still unusable because of details about computer architecture, byte conversion, outdated ways to code and much more.
+
+In this section I will only talk about the necessary changes to make the code work by today standtards and why did I make them. Since the tutorial is written for 32 bits, one of the main things we need to do is upgrade the code to 64 bits.
+
+## offsetof
+
+If we stop to notice, `BLOCK_SIZE` is defined twice, so, to counter this, we use the macro `offsetof()` to help us discover the size, in bytes, of the struct, from the beggining to the member of the struct we pass as an argument.
+
+In other words, it gives us the head of the object until it reaches the member. You can learn more about it [here](https://en.cppreference.com/cpp/types/offsetof).
+
+## Rewriting the calloc()
+
+So, our `calloc()` function had two main problems: a small typo and a risk of overflow (and an edge case I'll cover a bit later).
+
+One of the problems can be simply fixed changing an operator:
+```c
+void *calloc(size_t number, size_t size) {
+    ...
+    if (new) {
+        s4 = align8(number * size) >> 2; //bitshift operator changed
+    ...
+}
+```
+The problem here is embedded with the way the `calloc()` was created. We know that under the hood the `calloc()` is a `malloc()` initialized and cleaned, ready to be used. The problem can be found here:
+> We just play a little trick: the data block size in the chunk is always a multiple of 4, so iterate by 4 bytes steps. For this, we just use our new pointer as an unsigned integer array.
+And in the code, here:
+```c
+void calloc(...) {
+    ...
+
+    if (new) {
+        s4 = align8(number * size) << 2; //<< here
+        for (i = 0; i < s4; i++ ) { new[i] = 0; } //<< here
+    ...
+}
+```
+`s4` holds the size of the `number` multiplied by `size`, and multiplied by 4, locking the architecture of the code to 4 bytes and 4 bytes only, and this works in 32-bit systems but not in 64-bit systems.
+
+When we write `new[i]`, the compiler goes by `i * sizeof(size_t)` bytes. So, every iteration would clean 8 bytes in a 4-byte system.
+
+The solution to this is to take the dependency of architeture off the variable. Changing the type of the variable from `size_t` to `char` is a must because a `char` holds 1 byte in every architeture, and it's not system dependent. Doing this our `new[i]` could be iterated byte per byte.
+
+On the edge we could say that the function is not protected against overflow and segmentation fault.
+
+Let's say that we call our function to allocate memory to the size of 2⁶⁴ (18.446.744.073.709.551,616), since `size_t` doesn't hold any signal, and can hold up to 2⁶⁴ - 1, would our program know that it needs to stop? No! Despite the size being bigger than what the actual variable can hold up to, our intenger would end up doing a wraparound and resetting to 0 (`calloc(0)`), but the program would still believe that the size is allocated and this lead to a bigger problem.
+
+We can fix this by forcing the function to work with this edge case:
+```c
+...
+if (size != 0 && number > (size_t)-1 / size) { return NULL; }
+```
+* (size_t)-1 is the maximum value a size_t can hold.
 
 
-
-
-## Notes
-
-How can we know if the break is placed inside the page boundaries?
