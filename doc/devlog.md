@@ -195,4 +195,8 @@ if (size != 0 && number > (size_t)-1 / size) { return NULL; }
 ```
 * (size_t)-1 is the maximum value a size_t can hold.
 
+# Conclusion
 
+This was a great adventure and I'm proud to have done this work, even if it's a tutorial. I learned a lot about memory allocation and I look forward to study about more about low level programming, since it is the fundamentals of computer science.
+
+If you've read this, thank you for your time and I appreciate the attention. And I need to say: despite my studies being towards machine learning and AI, I have to disclaim any use of AI in this project. All things implemented were through the tutorial and all question were answered using online forums, youtube tutorials, books and articles of people that embraced the same journey as me. I do use AI, but for learning I rather do the traditional way.
